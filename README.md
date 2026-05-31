@@ -68,20 +68,23 @@ Assumption Drift: The relationship between transactional engagement and creditwo
 | **High-Performance**<br>*(e.g., Gradient Boosting / XGBoost)* | [cite_start]Robustly captures deep interactions and non-linear patterns, yielding higher ROC-AUC. | [cite_start]Inherently opaque; functions as a "black box" that can overfit volatile behavioral signals. | [cite_start]**Requires Guardrails.** Can only be used if paired with robust post-hoc explainability frameworks (SHAP/LIME). |
 
 ## 📊 Exploratory Data Analysis (Task 2)
-[cite_start]All exploratory data visual patterns, distribution analysis, and structural audits are contained within `notebooks/eda.ipynb`[cite: 120, 123]. [cite_start]Below are the key visual insights and statistical distributions from the Xente dataset[cite: 36]:
+All exploratory data visual patterns, distribution analysis, and structural audits are contained within `notebooks/eda.ipynb`. Below are the key visual insights and statistical distributions from the Xente dataset:
 
 ### 1. Target Class Distribution
-[cite_start]The dataset exhibits a severe class imbalance within the `FraudResult` target column, where the minority class accounts for an incredibly low fraction of overall transactions[cite: 37, 38]. 
+The dataset exhibits a severe, critical class imbalance within the `FraudResult` target column across its **95,662 total recorded transactions**, where the minority class accounts for a microscopic fraction of the overall data. 
 
 ![Target Class Distribution](notebooks/plots/target_distribution.png)
 
-* [cite_start]**Modeling Impact:** Standard classification accuracy will be highly misleading[cite: 56]. [cite_start]The predictive models must be optimized and evaluated strictly using Precision-Recall curves, F1-Score, and Area Under the ROC Curve (ROC-AUC)[cite: 56, 220].
+* **Concrete Metrics:** Out of 95,662 transactions, **only 193 cases are flagged as fraud** (`FraudResult = 1`). This represents an extreme imbalance rate of approximately **0.20% positive classes** vs. 99.80% normal transactions.
+* **Modeling Impact:** Standard classification accuracy will be highly misleading (a dummy model guessing "0" achieves 99.8% accuracy while failing completely). The predictive models must be optimized and evaluated strictly using Precision-Recall curves, F1-Score, and Area Under the ROC Curve (ROC-AUC).
 
 ### 2. Transaction Amount and Value Distributions
-[cite_start]The transaction `Amount` and absolute `Value` metrics are aggressively right-skewed, characterized by a massive volume of low-value day-to-day transactions and a small handful of extreme outlier spikes[cite: 37, 38].
+The transaction `Amount` and absolute `Value` metrics are aggressively right-skewed, characterized by a massive volume of low-value day-to-day transactions and a small handful of extreme outlier spikes.
 
 ![Monetary Distributions](notebooks/plots/monetary_distributions.png)
 
-* [cite_start]**Modeling Impact:** Distance-based algorithms—such as the K-Means clustering algorithm used later to build our behavioral credit risk proxy—will suffer from outlier dominance[cite: 185]. Applying log transformations (`log1p`) or robust scaling adjustments is mandatory to stabilize the feature space before modeling.
+* **Concrete Metrics:** The median transaction value sits tightly at **1,000 UGX** (with 75% of transactions falling under 5,000 UGX), yet the maximum recorded outlier values spike drastically all the way up to **9,880,000 UGX**. 
+* **Modeling Impact:** Distance-based algorithms—such as the K-Means clustering algorithm used later to build our behavioral credit risk proxy—will suffer completely from outlier dominance if left unaddressed. Applying log transformations (`log1p`) or robust scaling adjustments is mandatory to stabilize the feature space before modeling.
 
 ---
+
