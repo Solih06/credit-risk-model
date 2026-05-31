@@ -1,0 +1,27 @@
+@'
+# Data and ML binaries
+data/
+mlruns/
+mlflow/
+.mlflow/
+outputs/
+models/
+.ipynb_checkpoints/
+
+# Python environment & cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+pip-log.txt
+.pytest_cache/
+
+# IDE files
+.vscode/
+.idea/
+.DS_Store
+'@ | Out-File -FilePath ".gitignore" -Encoding utf8

@@ -1,0 +1,64 @@
+@'
+# Bati Bank Credit Risk Assessment Model (Alternative Data)
+
+An end-to-end Machine Learning pipeline built to evaluate credit risk for a Buy-Now-Pay-Later (BNPL) partnership between Bati Bank and a leading eCommerce platform using transaction-level data from Xente[cite: 8, 9, 36].
+
+---
+
+## 📌 Project Overview
+This repository contains the architecture, exploratory data analysis, and engineering work for an automated credit scoring system[cite: 17, 20]. By leveraging alternative transactional data, the system engineers behavioral risk proxies, tracks machine learning experiments, and deploys a production-ready REST API to support real-time credit underwriting[cite: 16, 24, 32].
+
+## 📂 Repository Structure
+```text
+credit-risk-model/
+├── .github/workflows/ci.yml      # CI/CD pipeline [cite: 82]
+├── data/                          # Ignored locally; raw and processed datasets [cite: 83]
+│   ├── raw/                       
+│   └── processed/                 
+├── notebooks/
+│   └── eda.ipynb                  # Exploratory Data Analysis & visual insights [cite: 87]
+├── src/
+│   ├── __init__.py
+│   ├── data_processing.py         # Feature engineering & transformation pipelines [cite: 90]
+│   ├── train.py                   # Model training & hyperparameter tuning [cite: 91]
+│   ├── predict.py                 # Real-time inference logic [cite: 92]
+│   └── api/
+│       ├── main.py                # FastAPI server implementation [cite: 94]
+│       └── pydantic_models.py     # Request/response data validation schemas [cite: 95]
+├── tests/
+│   └── test_data_processing.py    # Pytest automated unit tests [cite: 97]
+├── Dockerfile                     # API containerization [cite: 98]
+├── docker-compose.yml             # Local service orchestration [cite: 99]
+├── requirements.txt               # Project dependencies [cite: 100]
+├── .gitignore                     # Git tracking exclusions [cite: 101]
+└── README.md                      # Documentation & Business Understanding [cite: 102]
+```
+## 🏢 Credit Scoring Business Understanding (Task 1)
+
+### 1. Basel II Accord Compliance & Interpretability
+
+The Basel II Accord sets strict regulatory expectations for financial institutions regarding capital adequacy, risk documentation, and credit risk measurement.  
+
+    The Necessity of Interpretability: In a regulated banking environment like Bati Bank, black-box predictions are a legal liability. Credit risk models must be inherently transparent so that internal auditors, compliance officers, and external regulators can clearly trace why a customer was granted a specific credit score or denied a loan.  
+
+    Documentation & Monitoring: Basel II requires clear tracking of data lineage, feature selection criteria, and systemic model performance monitoring to manage data drift over time, protecting bank reserves from unmitigated defaults.
+
+### 2. The Necessity and Business Risks of a Proxy Target Variable
+
+Because our raw dataset consists of e-commerce transactions without historical loan records, there is no explicit ground-truth "default" label.  
+
+    Why a Proxy is Necessary: To train a supervised learning model, we must map behavioral patterns to a risk outcome. By computing Recency, Frequency, and Monetary (RFM) metrics, we can isolate highly disengaged or low-value user clusters to act as a proxy target for high credit default risk (is_high_risk).  
+
+    Business Risks Introduced: * False Positives: Mislabeled "high-risk" customers (e.g., creditworthy users who simply changed platforms) result in lost revenue and customer friction for the platform.  
+
+        False Negatives: Sophisticated bad actors or fraudulent profiles might exhibit excellent short-term transactional velocity, bypassing the proxy and triggering costly credit defaults.  
+
+        Assumption Drift: The relationship between transactional engagement and creditworthiness is a modeling assumption, not a constant law. Changes in macroeconomics or app design can completely break the proxy's validity.
+
+### 3. Model Trade-offs: Interpretability vs. Predictive Power
+[cite_start]Deploying a financial credit engine requires balancing compliance with predictive capability:
+
+| Model Approach | Strengths | Weaknesses | Basel II Context |
+| :--- | :--- | :--- | :--- |
+| **Simple / Interpretable**<br>*(e.g., Logistic Regression with WoE)* | [cite_start]Highly transparent coefficients; easy to map directly to a traditional, auditable scorecard. | [cite_start]Struggles to capture complex, non-linear interactions within noisy alternative datasets. | [cite_start]**Highly Approved.** Perfect for smooth regulatory audits and explicit credit justification. |
+| **High-Performance**<br>*(e.g., Gradient Boosting / XGBoost)* | [cite_start]Robustly captures deep interactions and non-linear patterns, yielding higher ROC-AUC. | [cite_start]Inherently opaque; functions as a "black box" that can overfit volatile behavioral signals. | [cite_start]**Requires Guardrails.** Can only be used if paired with robust post-hoc explainability frameworks (SHAP/LIME). |
