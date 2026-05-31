@@ -39,21 +39,21 @@ credit-risk-model/
 
 The Basel II Accord sets strict regulatory expectations for financial institutions regarding capital adequacy, risk documentation, and credit risk measurement.  
 
-    The Necessity of Interpretability: In a regulated banking environment like Bati Bank, black-box predictions are a legal liability. Credit risk models must be inherently transparent so that internal auditors, compliance officers, and external regulators can clearly trace why a customer was granted a specific credit score or denied a loan.  
+The Necessity of Interpretability: In a regulated banking environment like Bati Bank, black-box predictions are a legal liability. Credit risk models must be inherently transparent so that internal auditors, compliance officers, and external regulators can clearly trace why a customer was granted a specific credit score or denied a loan.  
 
-    Documentation & Monitoring: Basel II requires clear tracking of data lineage, feature selection criteria, and systemic model performance monitoring to manage data drift over time, protecting bank reserves from unmitigated defaults.
+Documentation & Monitoring: Basel II requires clear tracking of data lineage, feature selection criteria, and systemic model performance monitoring to manage data drift over time, protecting bank reserves from unmitigated defaults.
 
 ### 2. The Necessity and Business Risks of a Proxy Target Variable
 
 Because our raw dataset consists of e-commerce transactions without historical loan records, there is no explicit ground-truth "default" label.  
 
-    Why a Proxy is Necessary: To train a supervised learning model, we must map behavioral patterns to a risk outcome. By computing Recency, Frequency, and Monetary (RFM) metrics, we can isolate highly disengaged or low-value user clusters to act as a proxy target for high credit default risk (is_high_risk).  
+Why a Proxy is Necessary: To train a supervised learning model, we must map behavioral patterns to a risk outcome. By computing Recency, Frequency, and Monetary (RFM) metrics, we can isolate highly disengaged or low-value user clusters to act as a proxy target for high credit default risk (is_high_risk).  
 
-    Business Risks Introduced: * False Positives: Mislabeled "high-risk" customers (e.g., creditworthy users who simply changed platforms) result in lost revenue and customer friction for the platform.  
+Business Risks Introduced: * False Positives: Mislabeled "high-risk" customers (e.g., creditworthy users who simply changed platforms) result in lost revenue and customer friction for the platform.  
 
-        False Negatives: Sophisticated bad actors or fraudulent profiles might exhibit excellent short-term transactional velocity, bypassing the proxy and triggering costly credit defaults.  
+False Negatives: Sophisticated bad actors or fraudulent profiles might exhibit excellent short-term transactional velocity, bypassing the proxy and triggering costly credit defaults.  
 
-        Assumption Drift: The relationship between transactional engagement and creditworthiness is a modeling assumption, not a constant law. Changes in macroeconomics or app design can completely break the proxy's validity.
+Assumption Drift: The relationship between transactional engagement and creditworthiness is a modeling assumption, not a constant law. Changes in macroeconomics or app design can completely break the proxy's validity.
 
 ### 3. Model Trade-offs: Interpretability vs. Predictive Power
 [cite_start]Deploying a financial credit engine requires balancing compliance with predictive capability:
@@ -62,3 +62,22 @@ Because our raw dataset consists of e-commerce transactions without historical l
 | :--- | :--- | :--- | :--- |
 | **Simple / Interpretable**<br>*(e.g., Logistic Regression with WoE)* | [cite_start]Highly transparent coefficients; easy to map directly to a traditional, auditable scorecard. | [cite_start]Struggles to capture complex, non-linear interactions within noisy alternative datasets. | [cite_start]**Highly Approved.** Perfect for smooth regulatory audits and explicit credit justification. |
 | **High-Performance**<br>*(e.g., Gradient Boosting / XGBoost)* | [cite_start]Robustly captures deep interactions and non-linear patterns, yielding higher ROC-AUC. | [cite_start]Inherently opaque; functions as a "black box" that can overfit volatile behavioral signals. | [cite_start]**Requires Guardrails.** Can only be used if paired with robust post-hoc explainability frameworks (SHAP/LIME). |
+
+## 📊 Exploratory Data Analysis (Task 2)
+[cite_start]All exploratory data visual patterns, distribution analysis, and structural audits are contained within `notebooks/eda.ipynb`[cite: 120, 123]. [cite_start]Below are the key visual insights and statistical distributions from the Xente dataset[cite: 36]:
+
+### 1. Target Class Distribution
+[cite_start]The dataset exhibits a severe class imbalance within the `FraudResult` target column, where the minority class accounts for an incredibly low fraction of overall transactions[cite: 37, 38]. 
+
+![Target Class Distribution](notebooks/plots/target_distribution.png)
+
+* [cite_start]**Modeling Impact:** Standard classification accuracy will be highly misleading[cite: 56]. [cite_start]The predictive models must be optimized and evaluated strictly using Precision-Recall curves, F1-Score, and Area Under the ROC Curve (ROC-AUC)[cite: 56, 220].
+
+### 2. Transaction Amount and Value Distributions
+[cite_start]The transaction `Amount` and absolute `Value` metrics are aggressively right-skewed, characterized by a massive volume of low-value day-to-day transactions and a small handful of extreme outlier spikes[cite: 37, 38].
+
+![Monetary Distributions](notebooks/plots/monetary_distributions.png)
+
+* [cite_start]**Modeling Impact:** Distance-based algorithms—such as the K-Means clustering algorithm used later to build our behavioral credit risk proxy—will suffer from outlier dominance[cite: 185]. Applying log transformations (`log1p`) or robust scaling adjustments is mandatory to stabilize the feature space before modeling.
+
+---
