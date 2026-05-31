@@ -11,28 +11,32 @@ This repository contains the architecture, exploratory data analysis, and engine
 ## 📂 Repository Structure
 ```text
 credit-risk-model/
-├── .github/workflows/ci.yml      # CI/CD pipeline [cite: 82]
-├── data/                          # Ignored locally; raw and processed datasets [cite: 83]
+├── .github/workflows/ci.yml      # CI/CD pipeline
+├── data/                          # Ignored locally; raw and processed datasets
 │   ├── raw/                       
 │   └── processed/                 
 ├── notebooks/
-│   └── eda.ipynb                  # Exploratory Data Analysis & visual insights [cite: 87]
+│   ├── eda.ipynb                  # Exploratory Data Analysis & visual insights
+│   └── plots/                     # <-- Corrected: Housed inside notebooks/ for clean organization
+│       ├── monetary_distributions.png
+│       └── target_distribution.png
 ├── src/
 │   ├── __init__.py
-│   ├── data_processing.py         # Feature engineering & transformation pipelines [cite: 90]
-│   ├── train.py                   # Model training & hyperparameter tuning [cite: 91]
-│   ├── predict.py                 # Real-time inference logic [cite: 92]
+│   ├── data_processing.py         # Feature engineering & transformation pipelines
+│   ├── train.py                   # Model training & hyperparameter tuning
+│   ├── predict.py                 # Real-time inference logic
 │   └── api/
-│       ├── main.py                # FastAPI server implementation [cite: 94]
-│       └── pydantic_models.py     # Request/response data validation schemas [cite: 95]
+│       ├── main.py                # FastAPI server implementation
+│       └── pydantic_models.py     # Request/response data validation schemas
 ├── tests/
-│   └── test_data_processing.py    # Pytest automated unit tests [cite: 97]
-├── Dockerfile                     # API containerization [cite: 98]
-├── docker-compose.yml             # Local service orchestration [cite: 99]
-├── requirements.txt               # Project dependencies [cite: 100]
-├── .gitignore                     # Git tracking exclusions [cite: 101]
-└── README.md                      # Documentation & Business Understanding [cite: 102]
+│   └── test_data_processing.py    # Pytest automated unit tests
+├── Dockerfile                     # API containerization
+├── docker-compose.yml             # Local service orchestration
+├── requirements.txt               # Project dependencies
+├── .gitignore                     # Git tracking exclusions
+└── README.md                      # Documentation & Business Understanding
 ```
+
 ## 🏢 Credit Scoring Business Understanding (Task 1)
 
 ### 1. Basel II Accord Compliance & Interpretability
