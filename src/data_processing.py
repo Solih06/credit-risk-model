@@ -1,65 +1,87 @@
-﻿"""
-Data Processing Module for Credit Risk Probability Model.
-Handles robust scaling, feature engineering, and log transformations for skewed financial arrays.
-"""
-
-import os
-import logging
-import numpy as np
+﻿import numpy as np
 import pandas as pd
+from sklearn.base import BaseEstimator, TransformerMixin
+from sklearn.cluster import KMeans
 from sklearn.preprocessing import RobustScaler
 
-# Configure logging
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
-logger = logging.getLogger(__name__)
-
-def load_transaction_data(file_path: str) -> pd.DataFrame:
-    """
-    Safely loads raw transaction data from a CSV file path.
-    """
-    if not os.path.exists(file_path):
-        logger.error(f"Target data file not found at path: {file_path}")
-        raise FileNotFoundError(f"Missing file: {file_path}")
-    
-    try:
-        logger.info(f"Loading raw transactional dataset from {file_path}...")
-        df = pd.read_csv(file_path)
-        logger.info(f"Successfully loaded dataset with shape: {df.shape}")
+class XenteFeatureExtractor(BaseEstimator, TransformerMixin):
+    def __init__(self):
+        pass
+        
+    def fit(self, X, y=None):
+        return self
+        
+    def transform(self, X):
+        df = X.copy()
+        # Parse timestamp string to datetime object
+        df['TransactionStartTime'] = pd.to_datetime(df['TransactionStartTime'])
+        
+        # Datetime component extraction
+        df['TransactionHour'] = df['TransactionStartTime'].dt.hour
+        df['DayOfWeek'] = df['TransactionStartTime'].dt.dayofweek
+        df['IsWeekend'] = df['DayOfWeek'].isin([5, 6]).astype(int)
+        df['IsNightTransaction'] = df['TransactionHour'].between(23, 5).astype(int)
+        
+        # Account aggregation primitives
+        df['Amount'] = df['Amount'].astype(float)
         return df
-    except Exception as e:
-        logger.error(f"Failed to parse CSV transaction stream: {str(e)}")
-        raise e
 
-def transform_and_scale_features(df: pd.DataFrame, continuous_cols: list) -> pd.DataFrame:
+class WeightOfEvidenceEncoder(BaseEstimator, TransformerMixin):
+    def __init__(self, cols=None):
+        self.cols = cols
+        self.woe_maps = {}
+        
+    def fit(self, X, y):
+        df = X.copy()
+        df['target'] = y
+        for col in self.cols:
+            total_pos = df['target'].sum()
+            total_neg = len(df) - total_pos
+            
+            # Avoid divide-by-zero adjustments using a Laplace-style smoothing regularizer
+            stats = df.groupby(col)['target'].agg(['sum', 'count'])
+            stats['pos_dist'] = (stats['sum'] + 0.5) / (total_pos + 1.0)
+            stats['neg_dist'] = ((stats['count'] - stats['sum']) + 0.5) / (total_neg + 1.0)
+            
+            self.woe_maps[col] = np.log(stats['neg_dist'] / stats['pos_dist']).to_dict()
+        return self
+        
+    def transform(self, X):
+        df = X.copy()
+        for col in self.cols:
+            default_val = 0.0
+            df[col] = df[col].map(self.woe_maps[col]).fillna(default_val)
+        return df
+
+def generate_proxy_target_variable(df):
     """
-    Applies symmetric log transformations to fix monetary skewness and handles 
-    negative numbers (reversals) gracefully, then scales data using RobustScaler.
+    Computes rolling RFM parameters and flags the highest risk cluster.
     """
-    df_processed = df.copy()
+    data = df.copy()
+    data['TransactionStartTime'] = pd.to_datetime(data['TransactionStartTime'])
+    snapshot_date = data['TransactionStartTime'].max()
     
-    try:
-        for col in continuous_cols:
-            if col not in df_processed.columns:
-                raise KeyError(f"Target continuous column '{col}' missing from DataFrame.")
-            
-            # Apply Symmetric Log Transform to handle negative transaction values/reversals safely without making NaNs
-            logger.info(f"Applying robust symmetric log transformation to column: {col}")
-            df_processed[f'{col}_log'] = np.sign(df_processed[col]) * np.log1p(np.abs(df_processed[col]))
-            
-            # Defensive check to guarantee no NaNs leaked through
-            nan_count = df_processed[f'{col}_log'].isna().sum()
-            if nan_count > 0:
-                logger.warning(f"Detected {nan_count} NaNs in {col}_log. Filling with baseline 0.0.")
-                df_processed[f'{col}_log'] = df_processed[f'{col}_log'].fillna(0.0)
-            
-        # Instantiate RobustScaler to protect model from extreme outlier pulling forces
-        scaler = RobustScaler()
-        log_cols = [f'{col}_log' for col in continuous_cols]
-        
-        logger.info("Executing Robust Scaler transformation across engineered arrays...")
-        df_processed[log_cols] = scaler.fit_transform(df_processed[log_cols])
-        
-        return df_processed
-    except Exception as e:
-        logger.error(f"Error encountered during feature scaling routine: {str(e)}")
-        raise e
+    # Calculate RFM metrics per Customer
+    rfm = data.groupby('CustomerId').agg({
+        'TransactionStartTime': lambda x: (snapshot_date - x.max()).days,
+        'TransactionId': 'count',
+        'Amount': 'sum'
+    }).rename(columns={
+        'TransactionStartTime': 'Recency',
+        'TransactionId': 'Frequency',
+        'Amount': 'Monetary'
+    })
+    
+    # Normalize continuous fields using Robust Scaler to neutralize extreme outliers
+    scaler = RobustScaler()
+    scaled_features = scaler.fit_transform(rfm)
+    
+    # Run deterministic 3-Cluster K-Means segmenting
+    kmeans = KMeans(n_clusters=3, random_state=42, n_init=10)
+    rfm['Cluster'] = kmeans.fit_predict(scaled_features)
+    
+    # Isolate the high-risk proxy segment (Characterized by lowest frequency/engagement patterns)
+    risk_cluster = rfm.groupby('Cluster')['Frequency'].mean().idxmin()
+    rfm['is_high_risk'] = (rfm['Cluster'] == risk_cluster).astype(int)
+    
+    return data.merge(rfm[['is_high_risk']], on='CustomerId', how='left')

@@ -1,51 +1,61 @@
-﻿"""
-Model Training Module for Credit Risk Probability Underwriting.
-Implements cost-sensitive classification architectures addressing class imbalances.
-"""
-
-import logging
-from sklearn.model_selection import train_test_split
+﻿import pandas as pd
+import numpy as np
+import mlflow
+import mlflow.sklearn
+from sklearn.model_selection import StratifiedKFold
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import classification_report, roc_auc_score
-import pandas as pd
+from sklearn.metrics import precision_score, recall_score, f1_score, roc_auc_score
+from data_processing import XenteFeatureExtractor, WeightOfEvidenceEncoder, generate_proxy_target_variable
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
-logger = logging.getLogger(__name__)
-
-def train_credit_model(df: pd.DataFrame, feature_cols: list, target_col: str):
-    """
-    Splits the transactional data, configures balanced class weights to 
-    counteract the 0.20% imbalance constraint, and trains a baseline model.
-    """
-    try:
-        if target_col not in df.columns:
-            raise ValueError(f"Target flag '{target_col}' not found in active frame arrays.")
+def run_model_training_lifecycle(raw_data_path):
+    # Load raw transaction entries safely
+    df_raw = pd.read_csv(raw_data_path)
+    
+    # Construct target variable layer via K-Means
+    df_processed = generate_proxy_target_variable(df_raw)
+    
+    # Extract structural features
+    extractor = XenteFeatureExtractor()
+    df_features = extractor.transform(df_processed)
+    
+    features = ['ProviderId', 'ProductId', 'ProductCategory', 'TransactionHour', 'DayOfWeek', 'IsWeekend', 'IsNightTransaction', 'Amount']
+    X = df_features[features]
+    y = df_processed['is_high_risk']
+    
+    # Set up cross-validation splits to handle extreme class asymmetry
+    cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+    
+    categorical_fields = ['ProviderId', 'ProductId', 'ProductCategory']
+    
+    # Start MLflow experiment tracking
+    mlflow.set_experiment("Bati_Bank_Credit_Risk_Architecture")
+    
+    with mlflow.start_run(run_name="Production_Logistic_Regression"):
+        woe_encoder = WeightOfEvidenceEncoder(cols=categorical_fields)
+        
+        for train_idx, val_idx in cv.split(X, y):
+            X_train, X_val = X.iloc[train_idx].copy(), X.iloc[val_idx].copy()
+            y_train, y_val = y.iloc[train_idx], y.iloc[val_idx]
             
-        X = df[feature_cols]
-        y = df[target_col]
-        
-        # Train-Test Segmentation
-        X_train, X_test, y_train, y_test = train_test_split(
-            X, y, test_size=0.2, random_state=42, stratify=y
-        )
-        logger.info(f"Data stratified. Training size: {X_train.shape}, Test size: {X_test.shape}")
-        
-        # Configure class_weight='balanced' to handle the severe 0.20% imbalance
-        logger.info("Initializing Cost-Sensitive Logistic Regression Framework...")
-        model = LogisticRegression(class_weight='balanced', max_iter=1000, random_state=42)
-        
-        model.fit(X_train, y_train)
-        logger.info("Model optimization routine finalized successfully.")
-        
-        # Evaluate model performance using metrics resilient to class imbalance
-        predictions = model.predict(X_test)
-        probabilities = model.predict_proba(X_test)[:, 1]
-        
-        logger.info("\n=== MODEL PERFORMANCE METRICS ===")
-        logger.info(f"\n{classification_report(y_test, predictions)}")
-        logger.info(f"Receiver Operating Characteristic (ROC-AUC) Score: {roc_auc_score(y_test, probabilities):.4f}")
-        
-        return model
-    except Exception as e:
-        logger.error(f"Fatal error encountered during model training sequence: {str(e)}")
-        raise e 
+            X_train_enc = woe_encoder.fit_transform(X_train, y_train)
+            X_val_enc = woe_encoder.transform(X_val)
+            
+            # Use Cost-Sensitive weights to address class imbalance natively
+            model = LogisticRegression(class_weight='balanced', C=0.1, random_state=42, max_iter=1000)
+            model.fit(X_train_enc, y_train)
+            
+            preds = model.predict(X_val_enc)
+            probs = model.predict_proba(X_val_enc)[:, 1]
+            
+            # Log metrics
+            mlflow.log_metric("precision", precision_score(y_val, preds))
+            mlflow.log_metric("recall", recall_score(y_val, preds))
+            mlflow.log_metric("f1_score", f1_score(y_val, preds))
+            mlflow.log_metric("roc_auc", roc_auc_score(y_val, probs))
+            
+        # Register the production model artifact
+        mlflow.sklearn.log_model(model, "credit_risk_lr_model", registered_model_name="BatiRiskCoreLR")
+        print("Training successfully logged to MLflow Model Registry.")
+
+if __name__ == "__main__":
+    run_model_training_lifecycle("data/raw/training.csv")
