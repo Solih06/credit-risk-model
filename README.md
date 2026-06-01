@@ -167,10 +167,10 @@ Local Installation & Pipeline Execution
 **1. Clone the repository and initialize your virtual environment**:
     
     ```bash
-   git clone [https://github.com/Solih06/credit-risk-model.git](https://github.com/Solih06/credit-risk-model.git)
-   python -m venv venv
-   source venv/bin/activate  # On Windows use: venv\Scripts\activate
-   pip install -r requirements.txt
+    git clone [https://github.com/Solih06/credit-risk-model.git](https://github.com/Solih06/credit-risk-model.git)
+    python -m venv venv
+    source venv/bin/activate  # On Windows use: venv\Scripts\activate
+    pip install -r requirements.txt
     ```
 
 **2. Trigger the machine learning training pipeline to populate your local MLflow tracking workspace**:
