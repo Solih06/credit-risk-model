@@ -164,28 +164,32 @@ A comprehensive structural scan of the Xente transaction array was run to identi
 
 ## 🚀 Getting Started & Execution Guide
 Local Installation & Pipeline Execution
+
 **1. Clone the repository and initialize your virtual environment**:
     
-    ```bash
-git clone [https://github.com/Solih06/credit-risk-model.git](https://github.com/Solih06/credit-risk-model.git)
-python -m venv venv
-source venv/bin/activate  # On Windows use: venv\Scripts\activate
-pip install -r requirements.txt
-    
+```bash
+    git clone [https://github.com/Solih06/credit-risk-model.git](https://github.com/Solih06/credit-risk-model.git)
+    python -m venv venv
+    source venv/bin/activate  # On Windows use: venv\Scripts\activate
+    pip install -r requirements.txt
+```
 
 **2. Trigger the machine learning training pipeline to populate your local MLflow tracking workspace**:
-    ```bash
-python src/train.py
-    
+```bash
+    python src/train.py
+```
 
 **3. Run the application layer microservices natively or through Docker**:
-    ```bash
-docker-compose up --build -d
+```bash
+    docker-compose up --build -d
+```
 
 
 **4. Test the health and response capabilities of your deployed scoring API endpoint**:
-     ```bash
-curl http://localhost:8000/health
+```bash
+   curl http://localhost:8000/health
+```
+
 
     
 
