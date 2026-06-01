@@ -89,7 +89,7 @@ The transaction `Amount` and absolute `Value` metrics are aggressively right-ske
 ### 3. Boxplot-Based Outlier Investigation
 The transaction metrics display distinct hyper-extreme outliers which distort distance calculations across standard machine learning modeling baselines.
 
-![Outlier Boxplots](plots/outlier_boxplots.png)
+![Outlier Boxplots](notebooks/plots/outlier_boxplots.png)
 
 * **Analytical Insight:** While the bulk of transaction volumes exist within narrow limits, individual transactions scale up to nearly 10,000,000 UGX. 
 * **Downstream Modeling Decision:** Standard scaling (Z-score) will fail due to mean distortion from these extreme values. We will implement a `RobustScaler` (which uses the median and Interquartile Range) or strict log transformations before passing features to clustering algorithms to insulate centroids from outlier pull.
@@ -97,7 +97,7 @@ The transaction metrics display distinct hyper-extreme outliers which distort di
 ### 4. Numerical Feature Correlation Matrix
 An evaluation of linear relationships across structural numeric identifiers was conducted to isolate patterns of multicollinearity.
 
-![Correlation Heatmap](plots/correlation_heatmap.png)
+![Correlation Heatmap](notebooks/plots/correlation_heatmap.png)
 
 * **Analytical Insight:** High linear dependencies exist between transaction metrics like `Amount` and absolute `Value`. 
 * **Downstream Modeling Decision:** Keeping highly collinear variables intact will destabilize coefficients in interpretable linear models like Logistic Regression. We will drop redundant parallel vectors or utilize feature reduction techniques to ensure clean coefficient evaluation.
