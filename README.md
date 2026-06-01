@@ -86,5 +86,33 @@ The transaction `Amount` and absolute `Value` metrics are aggressively right-ske
 * **Concrete Metrics:** The median transaction value sits tightly at **1,000 UGX** (with 75% of transactions falling under 5,000 UGX), yet the maximum recorded outlier values spike drastically all the way up to **9,880,000 UGX**. 
 * **Modeling Impact:** Distance-based algorithms—such as the K-Means clustering algorithm used later to build our behavioral credit risk proxy—will suffer completely from outlier dominance if left unaddressed. Applying log transformations (`log1p`) or robust scaling adjustments is mandatory to stabilize the feature space before modeling.
 
+### 3. Boxplot-Based Outlier Investigation
+The transaction metrics display distinct hyper-extreme outliers which distort distance calculations across standard machine learning modeling baselines.
+
+![Outlier Boxplots](plots/outlier_boxplots.png)
+
+* **Analytical Insight:** While the bulk of transaction volumes exist within narrow limits, individual transactions scale up to nearly 10,000,000 UGX. 
+* **Downstream Modeling Decision:** Standard scaling (Z-score) will fail due to mean distortion from these extreme values. We will implement a `RobustScaler` (which uses the median and Interquartile Range) or strict log transformations before passing features to clustering algorithms to insulate centroids from outlier pull.
+
+### 4. Numerical Feature Correlation Matrix
+An evaluation of linear relationships across structural numeric identifiers was conducted to isolate patterns of multicollinearity.
+
+![Correlation Heatmap](plots/correlation_heatmap.png)
+
+* **Analytical Insight:** High linear dependencies exist between transaction metrics like `Amount` and absolute `Value`. 
+* **Downstream Modeling Decision:** Keeping highly collinear variables intact will destabilize coefficients in interpretable linear models like Logistic Regression. We will drop redundant parallel vectors or utilize feature reduction techniques to ensure clean coefficient evaluation.
+
+### 5. Missing Value Assessment & Imputation Plan
+A comprehensive structural scan of the Xente transaction array was run to identify data sparsity.
+
+| Feature Column | Missing Rows | Total Share (%) | Strategic Imputation Plan |
+| :--- | :--- | :--- | :--- |
+| `TransactionId` | 0 | 0.00% | No action required. |
+| `Amount` | 0 | 0.00% | No action required. |
+| `Value` | 0 | 0.00% | No action required. |
+| `FraudResult` | 0 | 0.00% | No action required. |
+
+* **Downstream Modeling Decision:** The core transactional profile columns within this dataset are structurally complete ($0\%$ missing values). If downstream feature engineering fields generate missing elements (e.g., historical rolling averages for fresh accounts), we will deploy **Median Imputation** for continuous arrays and **Mode Imputation** for low-frequency categoricals to guarantee pipeline stability.
+
 ---
 
