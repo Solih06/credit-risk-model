@@ -1,12 +1,15 @@
-@'
+
 # Bati Bank Credit Risk Assessment Model (Alternative Data)
 
-An end-to-end Machine Learning pipeline built to evaluate credit risk for a Buy-Now-Pay-Later (BNPL) partnership between Bati Bank and a leading eCommerce platform using transaction-level data from Xente[cite: 8, 9, 36].
+An end-to-end Machine Learning pipeline built to evaluate credit risk for a Buy-Now-Pay-Later (BNPL) partnership between Bati Bank and a leading eCommerce platform using alternative transaction-level data from Xente.
+
+
+## 📌 Project Overview
+
+This repository contains the architecture, exploratory data analysis, and production engineering layers for an automated credit scoring system. By leveraging alternative transactional data, the system builds an unsupervised behavioral risk proxy, extracts temporal patterns, tracks experiments with MLflow, and exposes inference endpoints through a containerized FastAPI application wrapped in a continuous integration workflow.
 
 ---
 
-## 📌 Project Overview
-This repository contains the architecture, exploratory data analysis, and engineering work for an automated credit scoring system[cite: 17, 20]. By leveraging alternative transactional data, the system engineers behavioral risk proxies, tracks machine learning experiments, and deploys a production-ready REST API to support real-time credit underwriting[cite: 16, 24, 32].
 
 ## 📂 Repository Structure
 ```text
@@ -119,4 +122,65 @@ A comprehensive structural scan of the Xente transaction array was run to identi
 * **Downstream Modeling Decision:** The core transactional profile columns within this dataset are structurally complete ($0\%$ missing values). If downstream feature engineering fields generate missing elements (e.g., historical rolling averages for fresh accounts), we will deploy **Median Imputation** for continuous arrays and **Mode Imputation** for low-frequency categoricals to guarantee pipeline stability.
 
 ---
+## 🛠️ Downstream Pipeline & Technical Execution (Tasks 3, 4, 5, 6)
+1. Preprocessing & Feature Engineering Layer (Task 3)
+
+    Datetime Feature Extraction: The raw timestamps within the TransactionStartTime array are structurally decomposed into explicit numeric behavioral parameters: TransactionHour, DayOfWeek, and binary indicators like IsWeekend and IsNightTransaction (flagging transactions between 11 PM and 5 AM) to isolate high-risk temporal patterns.
+
+    Categorical Encoding via Weight of Evidence (WoE): High-cardinality values (ProviderId, ProductId, and ProductCategory) are processed using a Weight of Evidence (WoE) transformation to map categorical text into monotonic continuous risk ratios using the log-odds formula:
+    WoEi​=ln(% of Fraud Eventsi​% of Non-Fraud Defaultsi​​)
+
+    Feature Selection via Information Value (IV): To ensure a clean feature selection pipeline, every engineered variable is evaluated using its Information Value (IV) to quantify total predictive power:
+    IV=∑(−% of Non-Fraud Defaultsi​​% of Fraud Eventsi​)×WoEi​
+
+    Features tracking below an IV threshold of 0.02 are discarded as noise, preventing overfitting.
+
+2. Model Building & Proxy Target Formulation (Task 4)
+
+    Proxy Target Generation via K-Means Clustering: K-Means clustering is deployed as the primary method for constructing the 'is_high_risk' proxy target variable in Task 4. By running unsupervised clustering across scaled Recency, Frequency, and Monetary (RFM) vectors, users are partitioned into distinct risk categories, cleanly establishing the binary ground-truth training vector.
+
+    Supervised Candidate Algorithm Layout: Using the constructed is_high_risk target, multiple classification architectures are built and compared:
+
+        Baseline Model: Cost-Sensitive Logistic Regression to ensure transparent feature weights in alignment with Basel II compliance layers.
+
+        Advanced Ensembles: LightGBM and XGBoost frameworks to capture deep, non-linear alternative interaction dynamics.
+
+    Stratified Validation: The training process utilizes Repeated Stratified 5-Fold Cross-Validation to guarantee that the tiny fraction of positive fraud profiles is distributed evenly across all validation partitions, avoiding training bias.
+
+3. Hyperparameter Tuning & MLflow Registry Integration (Task 5)
+
+    Hyperparameter Optimization: Model candidates undergo automated hyperparameter tuning using cross-validated Grid Search to optimize regularization weights (C-parameters), tree depth boundaries, and learning rates.
+
+    Experiment Tracking via MLflow: Every individual training run is tracked on a local MLflow server, logging parameter combinations, loss curves, and serialized models directly into the MLflow Model Registry.
+
+    Imbalance Optimization Metrics: Models configure cost-sensitive loss functions (class_weight='balanced') alongside SMOTE to evaluate performance across a comprehensive suite of risk metrics: Precision, Recall (Sensitivity), F1-Score, G-Mean, ROC-AUC, and PR-AUC.
+
+4. Deployment & CI/CD Pipeline Configuration (Task 6)
+
+    API Microservice Containerization: The production-ready model is exposed through a FastAPI application layer and containerized using Docker Compose to present clean, isolated, and scalable scoring endpoints.
+
+    Automated CI/CD Workflows via GitHub Actions: A continuous integration pipeline (.github/workflows/ci.yml) runs automatically on every code push to the main branch, triggering flake8 syntax checks, black code formatting validation, and automated unit-testing suites via pytest to guarantee mathematical stability before release.
+---
+
+## 🚀 Getting Started & Execution Guide
+Local Installation & Pipeline Execution
+**1. Clone the repository and initialize your virtual environment**:
+    
+    ```bash
+   git clone [https://github.com/Solih06/credit-risk-model.git](https://github.com/Solih06/credit-risk-model.git)
+   python -m venv venv
+   source venv/bin/activate  # On Windows use: venv\Scripts\activate
+   pip install -r requirements.txt
+**2. Trigger the machine learning training pipeline to populate your local MLflow tracking workspace**:
+    ```bash
+    python src/train.py
+
+**3. Run the application layer microservices natively or through Docker**:
+    ```bash
+    docker-compose up --build -d
+
+**4. Test the health and response capabilities of your deployed scoring API endpoint**:
+     ```bash
+     curl http://localhost:8000/health
+    
 
