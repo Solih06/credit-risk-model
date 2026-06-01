@@ -11,30 +11,34 @@ This repository contains the architecture, exploratory data analysis, and engine
 ## 📂 Repository Structure
 ```text
 credit-risk-model/
-├── .github/workflows/ci.yml      # CI/CD pipeline
-├── data/                          # Ignored locally; raw and processed datasets
-│   ├── raw/                       
-│   └── processed/                 
+├── .github/
+│   └── workflows/
+│       └── ci.yml               # CI/CD pipeline configuration placeholder
+├── data/
+│   ├── raw/                     # Raw immutable source data (Git ignored)
+│   └── processed/               # Data layers after cleanup & scaling (Git ignored)
 ├── notebooks/
-│   ├── eda.ipynb                  # Exploratory Data Analysis & visual insights
-│   └── plots/                     # <-- Corrected: Housed inside notebooks/ for clean organization
-│       ├── monetary_distributions.png
-│       └── target_distribution.png
+│   ├── eda.ipynb                # Fully executed Exploratory Data Analysis workspace
+│   └── plots/                   # Stored diagnostic data visualizations
+│       ├── target_distribution.png     # Class asymmetry bar charts
+│       ├── monetary_distributions.png  # Right-skewed density curves
+│       ├── outlier_boxplots.png        # NEW: Interquartile metric range audits
+│       └── correlation_heatmap.png     # NEW: Numerical collinearity matrix
 ├── src/
+│   ├── api/
+│   │   ├── main.py              # FastAPI application initialization
+│   │   └── pydantic_models.py   # Request validation schema blueprints
 │   ├── __init__.py
-│   ├── data_processing.py         # Feature engineering & transformation pipelines
-│   ├── train.py                   # Model training & hyperparameter tuning
-│   ├── predict.py                 # Real-time inference logic
-│   └── api/
-│       ├── main.py                # FastAPI server implementation
-│       └── pydantic_models.py     # Request/response data validation schemas
+│   ├── data_processing.py       # Robust scaling & log conversion modules
+│   ├── train.py                 # Underwriting model training scripts
+│   └── predict.py               # Scoring inference execution modules
 ├── tests/
-│   └── test_data_processing.py    # Pytest automated unit tests
-├── Dockerfile                     # API containerization
-├── docker-compose.yml             # Local service orchestration
-├── requirements.txt               # Project dependencies
-├── .gitignore                     # Git tracking exclusions
-└── README.md                      # Documentation & Business Understanding
+│   └── test_data_processing.py  # Unit testing frameworks for verification
+├── .gitignore                   # Excludes raw data caches, checkpoints & credentials
+├── Dockerfile                   # Container configuration blueprint
+├── docker-compose.yml           # Microservice orchestration orchestrator
+├── README.md                    # Core project presentation & compliance map
+└── requirements.txt             # Strict pip package dependency lists
 ```
 
 ## 🏢 Credit Scoring Business Understanding (Task 1)
